@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "subgen"
+version = "0.1.0"
+description = "Modular subtitle generation pipeline — transcribe, translate, and emit SRT files from any video."
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.1",
+    "torchaudio>=2.1",
+    "transformers>=4.36",
+    "faster-whisper>=1.0",
+    "ffmpeg-python>=0.2",
+    "pysrt>=1.1",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "typer[all]>=0.9",
+]
+
+[project.optional-dependencies]
+whisperx = ["whisperx>=3.1"]
+demucs = ["demucs>=4.0"]
+dev = ["pytest>=7", "ruff"]
+
+[project.scripts]
+subgen = "subgen.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["subgen*"]

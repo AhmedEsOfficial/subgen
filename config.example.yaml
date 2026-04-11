@@ -1,0 +1,33 @@
+audio:
+  sample_rate: 16000
+  mono: true
+  denoise: false
+
+vad:
+  engine: silero  # silero | energy
+  min_speech_duration: 0.5
+  min_silence_duration: 0.3
+
+language_detection:
+  engine: whisper  # whisper | fixed
+  fixed_language: null  # set to skip auto-detection (e.g. "ar")
+
+asr:
+  engine: faster_whisper  # whisperx | whisper_hf | faster_whisper
+  model: large-v3-turbo
+  device: auto  # auto | cuda | cpu
+  compute_type: float16
+
+translation:
+  engine: nllb  # nllb | opus | local_llm | none
+  model: facebook/nllb-200-3.3B
+  source_lang: arz_Arab  # Egyptian Arabic (NLLB code)
+  target_lang: eng_Latn
+  batch_size: 8
+
+subtitle:
+  max_chars_per_line: 42
+  max_cps: 17
+  max_lines: 2
+  min_duration: 0.8
+  max_duration: 7.0

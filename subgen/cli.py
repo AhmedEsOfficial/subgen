@@ -1,0 +1,101 @@
+"""CLI entry point for subgen."""
+
+from __future__ import annotations
+
+import logging
+import sys
+from pathlib import Path
+from typing import Optional
+
+import typer
+
+from subgen import __version__
+from subgen.config import AppConfig, load_config
+from subgen.orchestrator import Pipeline
+
+app = typer.Typer(
+    name="subgen",
+    help="Generate subtitles from video files — transcribe, translate, emit SRT.",
+    add_completion=False,
+)
+
+
+def _setup_logging(verbose: bool) -> None:
+    level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+        stream=sys.stderr,
+    )
+
+
+@app.command()
+def generate(
+    input_file: Path = typer.Argument(..., help="Input video file path", exists=True),
+    output: Optional[Path] = typer.Option(None, "-o", "--output", help="Output SRT file path"),
+    config: Optional[Path] = typer.Option(None, "--config", "-c", help="YAML config file path"),
+    source_lang: Optional[str] = typer.Option(None, "--source-lang", "-s", help="Source language code (e.g. 'ar')"),
+    target_lang: Optional[str] = typer.Option(None, "--target-lang", "-t", help="Target language code (e.g. 'en')"),
+    asr: Optional[str] = typer.Option(None, "--asr", help="ASR engine: whisperx | whisper_hf | faster_whisper"),
+    asr_model: Optional[str] = typer.Option(None, "--asr-model", help="ASR model name/path"),
+    translator: Optional[str] = typer.Option(None, "--translator", help="Translation engine: nllb | opus | local_llm | none"),
+    translator_model: Optional[str] = typer.Option(None, "--translator-model", help="Translation model name/path"),
+    denoise: bool = typer.Option(False, "--denoise", help="Enable audio denoising via demucs"),
+    device: Optional[str] = typer.Option(None, "--device", help="Device: auto | cuda | cpu"),
+    verbose: bool = typer.Option(False, "-v", "--verbose", help="Enable debug logging"),
+) -> None:
+    """Generate subtitles from a video file."""
+    _setup_logging(verbose)
+    logger = logging.getLogger("subgen.cli")
+
+    # Load config
+    if config and config.exists():
+        logger.info("Loading config from %s", config)
+        cfg = load_config(config)
+    else:
+        cfg = AppConfig()
+
+    # Apply CLI overrides
+    if source_lang:
+        cfg.language_detection.engine = "fixed"
+        cfg.language_detection.fixed_language = source_lang
+    if target_lang:
+        cfg.translation.target_lang = target_lang
+    if asr:
+        cfg.asr.engine = asr  # type: ignore[assignment]
+    if asr_model:
+        cfg.asr.model = asr_model
+    if translator:
+        cfg.translation.engine = translator  # type: ignore[assignment]
+    if translator_model:
+        cfg.translation.model = translator_model
+    if denoise:
+        cfg.audio.denoise = True
+    if device:
+        cfg.asr.device = device  # type: ignore[assignment]
+
+    # Determine output path
+    if output is None:
+        output = input_file.with_suffix(".srt")
+
+    # Run pipeline
+    logger.info("Starting subtitle generation: %s", input_file)
+    pipeline = Pipeline(cfg)
+    result = pipeline.run(
+        video_path=input_file,
+        output_path=output,
+        source_lang=source_lang,
+        target_lang=target_lang,
+    )
+    typer.echo(f"Subtitles written to: {result}")
+
+
+@app.command()
+def version() -> None:
+    """Show subgen version."""
+    typer.echo(f"subgen v{__version__}")
+
+
+if __name__ == "__main__":
+    app()
