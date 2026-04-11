@@ -41,4 +41,8 @@ class BaseTranslator(ABC):
             from subgen.translation.local_llm import LocalLLMTranslator
 
             return LocalLLMTranslator(cfg)
+        if cfg.engine == "llama_cpp":
+            from subgen.translation.llama_cpp import LlamaCppTranslator
+
+            return LlamaCppTranslator(cfg)
         raise ValueError(f"Unknown translation engine: {cfg.engine}")

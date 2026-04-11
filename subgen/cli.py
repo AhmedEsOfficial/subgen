@@ -39,8 +39,10 @@ def generate(
     target_lang: Optional[str] = typer.Option(None, "--target-lang", "-t", help="Target language code (e.g. 'en')"),
     asr: Optional[str] = typer.Option(None, "--asr", help="ASR engine: whisperx | whisper_hf | faster_whisper"),
     asr_model: Optional[str] = typer.Option(None, "--asr-model", help="ASR model name/path"),
-    translator: Optional[str] = typer.Option(None, "--translator", help="Translation engine: nllb | opus | local_llm | none"),
+    translator: Optional[str] = typer.Option(None, "--translator", help="Translation engine: llama_cpp | nllb | opus | local_llm | none"),
     translator_model: Optional[str] = typer.Option(None, "--translator-model", help="Translation model name/path"),
+    llama_server_url: Optional[str] = typer.Option(None, "--llama-url", help="URL of running llama-server (e.g. http://127.0.0.1:8081)"),
+    initial_prompt: Optional[str] = typer.Option(None, "--initial-prompt", help="Initial prompt for ASR (improves dialect accuracy)"),
     denoise: bool = typer.Option(False, "--denoise", help="Enable audio denoising via demucs"),
     device: Optional[str] = typer.Option(None, "--device", help="Device: auto | cuda | cpu"),
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Enable debug logging"),
@@ -70,6 +72,10 @@ def generate(
         cfg.translation.engine = translator  # type: ignore[assignment]
     if translator_model:
         cfg.translation.model = translator_model
+    if llama_server_url:
+        cfg.translation.llama_server_url = llama_server_url
+    if initial_prompt:
+        cfg.asr.initial_prompt = initial_prompt
     if denoise:
         cfg.audio.denoise = True
     if device:

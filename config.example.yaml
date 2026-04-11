@@ -9,21 +9,31 @@ vad:
   min_silence_duration: 0.3
 
 language_detection:
-  engine: whisper  # whisper | fixed
-  fixed_language: null  # set to skip auto-detection (e.g. "ar")
+  engine: fixed  # whisper | fixed
+  fixed_language: ar  # set to skip auto-detection (e.g. "ar")
 
 asr:
   engine: faster_whisper  # whisperx | whisper_hf | faster_whisper
-  model: large-v3-turbo
+  model: large-v3
   device: auto  # auto | cuda | cpu
   compute_type: float16
+  beam_size: 5
+  best_of: 5
+  patience: 1.0
+  condition_on_previous_text: true
+  initial_prompt: null  # hint for ASR (e.g. Egyptian Arabic context)
 
 translation:
-  engine: nllb  # nllb | opus | local_llm | none
-  model: facebook/nllb-200-3.3B
-  source_lang: arz_Arab  # Egyptian Arabic (NLLB code)
+  engine: llama_cpp  # llama_cpp | nllb | opus | local_llm | none
+  model: models/Gemma-4-E4B.gguf
+  source_lang: arz_Arab  # Egyptian Arabic
   target_lang: eng_Latn
-  batch_size: 8
+  batch_size: 10  # lines per LLM batch call
+  # llama_cpp settings
+  llama_server_url: null  # null = auto-launch; or e.g. "http://127.0.0.1:8081"
+  llama_auto_launch: true
+  llama_gpu_layers: auto
+  llama_ctx_size: 8192
 
 subtitle:
   max_chars_per_line: 42

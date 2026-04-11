@@ -107,23 +107,18 @@ class Pipeline:
             logger.info("Transcribed %d segments", len(segments))
 
             # --- Stage 5: Translation ---
-            effective_target = target_lang or self.cfg.translation.target_lang
-            needs_translation = (
-                self._translator is not None
-                and detected_lang != effective_target
-                and self.cfg.translation.engine != "none"
-            )
-
-            if needs_translation and self._translator is not None:
+            if self._translator is not None and self.cfg.translation.engine != "none":
                 logger.info(
-                    "=== Stage 5: Translation (%s → %s) ===",
+                    "=== Stage 5: Translation (%s → %s, engine=%s) ===",
                     detected_lang,
-                    effective_target,
+                    target_lang or self.cfg.translation.target_lang,
+                    self.cfg.translation.engine,
                 )
                 texts = [seg.text for seg in segments]
                 translated = self._translator.translate_batch(texts)
                 for seg, trans in zip(segments, translated):
                     seg.text = trans
+                logger.info("Translated %d segments", len(translated))
             else:
                 logger.info("=== Stage 5: Translation skipped ===")
 
@@ -143,3 +138,6 @@ class Pipeline:
                     logger.debug("Cleaned up temp file: %s", audio_path)
                 except OSError:
                     pass
+            # Shut down auto-launched llama-server if applicable
+            if self._translator is not None and hasattr(self._translator, "shutdown"):
+                self._translator.shutdown()

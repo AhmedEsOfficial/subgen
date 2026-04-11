@@ -46,12 +46,24 @@ class FasterWhisperASR(BaseASR):
         assert self._model is not None
         logger.info("faster-whisper transcribing %s (lang=%s)", audio_path, language)
 
-        raw_segments, info = self._model.transcribe(
-            str(audio_path),
+        transcribe_kwargs: dict = dict(
             language=language,
             word_timestamps=True,
-            vad_filter=regions is None,  # use built-in VAD only if no regions provided
+            beam_size=self.cfg.beam_size,
+            best_of=self.cfg.best_of,
+            patience=self.cfg.patience,
+            condition_on_previous_text=self.cfg.condition_on_previous_text,
+            vad_filter=True,
+            vad_parameters=dict(
+                min_speech_duration_ms=500,
+                min_silence_duration_ms=300,
+                speech_pad_ms=200,
+            ),
         )
+        if self.cfg.initial_prompt:
+            transcribe_kwargs["initial_prompt"] = self.cfg.initial_prompt
+
+        raw_segments, info = self._model.transcribe(str(audio_path), **transcribe_kwargs)
 
         logger.info(
             "Detected language: %s (prob=%.2f)", info.language, info.language_probability
@@ -59,6 +71,10 @@ class FasterWhisperASR(BaseASR):
 
         segments: list[TimedSegment] = []
         for seg in raw_segments:
+            text = seg.text.strip()
+            # Skip hallucinated / repeated filler segments
+            if not text or seg.no_speech_prob > 0.6:
+                continue
             words = [
                 TimedWord(start=w.start, end=w.end, word=w.word.strip())
                 for w in (seg.words or [])
@@ -67,7 +83,7 @@ class FasterWhisperASR(BaseASR):
                 TimedSegment(
                     start=seg.start,
                     end=seg.end,
-                    text=seg.text.strip(),
+                    text=text,
                     language=info.language,
                     words=words,
                 )

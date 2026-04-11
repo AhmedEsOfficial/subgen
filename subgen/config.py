@@ -28,17 +28,27 @@ class LanguageDetectionConfig(BaseModel):
 
 class ASRConfig(BaseModel):
     engine: Literal["whisperx", "whisper_hf", "faster_whisper"] = "faster_whisper"
-    model: str = "large-v3-turbo"
+    model: str = "large-v3"
     device: Literal["auto", "cuda", "cpu"] = "auto"
     compute_type: str = "float16"
+    beam_size: int = 5
+    best_of: int = 5
+    patience: float = 1.0
+    condition_on_previous_text: bool = True
+    initial_prompt: str | None = None
 
 
 class TranslationConfig(BaseModel):
-    engine: Literal["nllb", "opus", "local_llm", "none"] = "nllb"
+    engine: Literal["nllb", "opus", "local_llm", "llama_cpp", "none"] = "llama_cpp"
     model: str = "facebook/nllb-200-3.3B"
     source_lang: str = "arz_Arab"
     target_lang: str = "eng_Latn"
     batch_size: int = 8
+    # llama_cpp-specific settings
+    llama_server_url: str | None = None
+    llama_auto_launch: bool = True
+    llama_gpu_layers: str = "auto"
+    llama_ctx_size: int = 8192
 
 
 class SubtitleConfig(BaseModel):
