@@ -31,11 +31,25 @@ class ASRConfig(BaseModel):
     model: str = "large-v3"
     device: Literal["auto", "cuda", "cpu"] = "auto"
     compute_type: str = "float16"
-    beam_size: int = 5
+    beam_size: int = 10
     best_of: int = 5
     patience: float = 1.0
-    condition_on_previous_text: bool = True
+    # Disabling prev-text conditioning prevents hallucination cascades where one
+    # bad segment poisons the next. Critical for dialectal/noisy audio.
+    condition_on_previous_text: bool = False
     initial_prompt: str | None = None
+    # Decoder fallback / filtering thresholds (passed to faster-whisper)
+    temperature: list[float] = Field(default_factory=lambda: [0.0, 0.2, 0.4, 0.6, 0.8])
+    compression_ratio_threshold: float = 2.4
+    log_prob_threshold: float = -1.0
+    no_speech_threshold: float = 0.5
+    # Post-decode hallucination filter: drop segments with no_speech_prob above this
+    hallucination_no_speech_prob: float = 0.6
+    # VAD filter parameters (Silero inside faster-whisper)
+    vad_min_speech_ms: int = 250
+    vad_min_silence_ms: int = 250
+    vad_speech_pad_ms: int = 400
+    vad_threshold: float = 0.35
 
 
 class TranslationConfig(BaseModel):

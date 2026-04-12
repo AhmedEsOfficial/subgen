@@ -17,11 +17,23 @@ asr:
   model: large-v3
   device: auto  # auto | cuda | cpu
   compute_type: float16
-  beam_size: 5
+  beam_size: 10
   best_of: 5
   patience: 1.0
-  condition_on_previous_text: true
-  initial_prompt: null  # hint for ASR (e.g. Egyptian Arabic context)
+  # Prev-text conditioning causes hallucination cascades on dialectal audio — keep off.
+  condition_on_previous_text: false
+  # Arabic prompt biases the decoder toward Egyptian dialect spelling/vocabulary.
+  initial_prompt: "حوار باللهجة المصرية العامية من فيلم كلاسيكي."
+  temperature: [0.0, 0.2, 0.4, 0.6, 0.8]
+  compression_ratio_threshold: 2.4
+  log_prob_threshold: -1.0
+  no_speech_threshold: 0.5
+  hallucination_no_speech_prob: 0.6
+  # VAD filter (Silero inside faster-whisper) — tuned to catch short Egyptian particles
+  vad_min_speech_ms: 250
+  vad_min_silence_ms: 250
+  vad_speech_pad_ms: 400
+  vad_threshold: 0.35
 
 translation:
   engine: llama_cpp  # llama_cpp | nllb | opus | local_llm | none

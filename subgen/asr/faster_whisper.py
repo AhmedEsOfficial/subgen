@@ -53,11 +53,16 @@ class FasterWhisperASR(BaseASR):
             best_of=self.cfg.best_of,
             patience=self.cfg.patience,
             condition_on_previous_text=self.cfg.condition_on_previous_text,
+            temperature=tuple(self.cfg.temperature),
+            compression_ratio_threshold=self.cfg.compression_ratio_threshold,
+            log_prob_threshold=self.cfg.log_prob_threshold,
+            no_speech_threshold=self.cfg.no_speech_threshold,
             vad_filter=True,
             vad_parameters=dict(
-                min_speech_duration_ms=500,
-                min_silence_duration_ms=300,
-                speech_pad_ms=200,
+                min_speech_duration_ms=self.cfg.vad_min_speech_ms,
+                min_silence_duration_ms=self.cfg.vad_min_silence_ms,
+                speech_pad_ms=self.cfg.vad_speech_pad_ms,
+                threshold=self.cfg.vad_threshold,
             ),
         )
         if self.cfg.initial_prompt:
@@ -73,7 +78,7 @@ class FasterWhisperASR(BaseASR):
         for seg in raw_segments:
             text = seg.text.strip()
             # Skip hallucinated / repeated filler segments
-            if not text or seg.no_speech_prob > 0.6:
+            if not text or seg.no_speech_prob > self.cfg.hallucination_no_speech_prob:
                 continue
             words = [
                 TimedWord(start=w.start, end=w.end, word=w.word.strip())
