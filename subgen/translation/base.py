@@ -21,6 +21,15 @@ class BaseTranslator(ABC):
         """Translate a batch of texts.  Default: sequential fallback."""
         return [self.translate(t) for t in texts]
 
+    def translate_with_context(self, texts: list[str], domain: str) -> list[str]:
+        """Translate consecutive fragments of one conversation, one output per input.
+
+        Engines that can use surrounding lines as context (LLMs) override this.
+        *domain* describes the material, e.g. "a WhatsApp voice note".
+        Default: plain batch translation.
+        """
+        return self.translate_batch(texts)
+
     @classmethod
     def from_config(cls, cfg: TranslationConfig) -> BaseTranslator | None:
         """Factory: create the appropriate translator from config.

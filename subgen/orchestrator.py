@@ -118,6 +118,9 @@ class Pipeline:
                 translated = self._translator.translate_batch(texts)
                 for seg, trans in zip(segments, translated):
                     seg.text = trans
+                    # Word timings describe the source text; keeping them would make
+                    # the formatter rebuild cues out of untranslated words.
+                    seg.words = []
                 logger.info("Translated %d segments", len(translated))
             else:
                 logger.info("=== Stage 5: Translation skipped ===")

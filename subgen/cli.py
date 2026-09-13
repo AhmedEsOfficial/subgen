@@ -98,6 +98,41 @@ def generate(
 
 
 @app.command()
+def voicenote(
+    inputs: list[Path] = typer.Argument(..., help="Voice note files and/or directories of them", exists=True),
+    config: Path = typer.Option(Path("config.voicenote.yaml"), "--config", "-c", help="YAML config file path"),
+    out_dir: Optional[Path] = typer.Option(None, "--out-dir", "-o", help="Output directory (default: next to each input)"),
+    force: bool = typer.Option(False, "--force", "-f", help="Redo notes that already have a transcript"),
+    translator: Optional[str] = typer.Option(None, "--translator", help="Translation engine override (e.g. none)"),
+    verbose: bool = typer.Option(False, "-v", "--verbose", help="Enable debug logging"),
+) -> None:
+    """Transcribe and translate voice notes into a bilingual Markdown transcript + SRTs."""
+    from subgen.voicenote import VoiceNoteTranscriber, collect_inputs
+
+    _setup_logging(verbose)
+    if not config.exists():
+        raise typer.BadParameter(f"config file not found: {config}", param_hint="--config")
+    cfg = load_config(config)
+    if translator:
+        cfg.translation.engine = translator  # type: ignore[assignment]
+
+    files = collect_inputs(inputs)
+    if not files:
+        typer.echo("No audio files found.")
+        raise typer.Exit(1)
+
+    notes, failed = VoiceNoteTranscriber(cfg).run(files, out_dir=out_dir, force=force)
+    for note in notes:
+        typer.echo(f"Transcript written to: {note.markdown_path}")
+    if not notes and not failed:
+        typer.echo("Nothing to do — every note already has a transcript (use --force to redo).")
+    for path in failed:
+        typer.echo(f"FAILED: {path}", err=True)
+    if failed:
+        raise typer.Exit(1)
+
+
+@app.command()
 def version() -> None:
     """Show subgen version."""
     typer.echo(f"subgen v{__version__}")

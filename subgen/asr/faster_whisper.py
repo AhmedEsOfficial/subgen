@@ -81,7 +81,7 @@ class FasterWhisperASR(BaseASR):
             if not text or seg.no_speech_prob > self.cfg.hallucination_no_speech_prob:
                 continue
             words = [
-                TimedWord(start=w.start, end=w.end, word=w.word.strip())
+                TimedWord(start=w.start, end=w.end, word=w.word.strip(), probability=w.probability)
                 for w in (seg.words or [])
             ]
             segments.append(

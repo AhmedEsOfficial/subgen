@@ -52,6 +52,10 @@ subgen generate film.mkv -s ar -t en --translator llama_cpp --translator-model /
 
 # Using a config file
 subgen generate film.mkv -c config.example.yaml -o output.srt
+
+# Voice notes (WhatsApp/Telegram) — every new note in voicenotes/, or named files
+scripts/voicenote.sh
+scripts/voicenote.sh voicenotes/audio_2026-09-13_18-44-51.ogg
 ```
 
 ## Requirements
@@ -106,6 +110,33 @@ subgen generate INPUT_FILE [OPTIONS]
 | `--denoise` | | off | Enable Demucs vocal isolation |
 | `--device` | | `auto` | `cuda`, `cpu`, or `auto` |
 | `--verbose` | `-v` | off | Debug logging |
+
+### `subgen voicenote`
+
+```
+subgen voicenote INPUTS... [OPTIONS]
+scripts/voicenote.sh [INPUTS...] [OPTIONS]
+```
+
+Transcribes and translates short voice notes. For each input `<name>.ogg` it writes, next to the input:
+
+| File | Contents |
+|------|----------|
+| `<name>.md` | Bilingual transcript (translation, RTL source transcript) plus a list of low-confidence words to re-listen to |
+| `<name>.ar.srt` | Source-language subtitles |
+| `<name>.en.srt` | Translated subtitles |
+
+Inputs may be files or directories (all audio files directly inside). A note that already has `<name>.md` is skipped unless `--force` is given, so re-running over a folder only processes new notes. `scripts/voicenote.sh` runs this with the repo's venv and `config.voicenote.yaml`, from any directory, and defaults to `voicenotes/` when no input is given.
+
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--config` | `-c` | `config.voicenote.yaml` | YAML config file |
+| `--out-dir` | `-o` | next to each input | Output directory |
+| `--force` | `-f` | off | Redo notes that already have a transcript |
+| `--translator` | | from config | Translation engine override (e.g. `none`) |
+| `--verbose` | `-v` | off | Debug logging |
+
+How it differs from `generate`: every file is transcribed first and the ASR model is released before translation, so whisper and the LLM never share VRAM and llama-server starts once per run. Translation is one request per line with the preceding lines as context, which keeps fragments split mid-sentence coherent (too slow for a feature film, fine for notes). The output still needs a human check: whisper sometimes mishears a word with high confidence, and those words are not flagged.
 
 ### `subgen version`
 
@@ -213,8 +244,10 @@ The `faster_whisper` engine includes a hallucination filter that drops segments 
 
 **`llama_cpp` features:**
 - Auto-launches `llama-server` if not already running, shuts it down when done
-- Batch translation — sends 10 lines per API call with numbered formatting
-- Arabic detection fallback — if a translated line is still >30% Arabic script, retries individually
+- Batch translation — sends 10 lines per API call with numbered formatting; replies are matched to inputs by their line number, so a skipped or merged line cannot shift later translations
+- Missing lines, and lines still >30% Arabic script, are retranslated individually
+- `<think>` reasoning blocks are stripped from replies
+- Context mode (`translate_with_context`, used by `subgen voicenote`) — one request per line with surrounding lines as context
 - Retry logic with 600s timeout per request (supports thinking models)
 - Works with any GGUF model: Gemma, Qwen, Llama, Mistral, etc.
 
@@ -230,7 +263,8 @@ subgen generate film.mp4 -s ar -t en --llama-url http://127.0.0.1:8081
 
 - Line wrapping at configurable character limit (default 42)
 - CPS (characters per second) enforcement (default max 17)
-- Splits long segments using word-level timestamps when available
+- Splits long segments using word-level timestamps when they still match the text (after translation they don't, so the translated text is split by character share instead)
+- Never truncates: text that doesn't fit `max_lines` becomes additional cues
 - Merges consecutive short segments
 - Minimum/maximum duration enforcement
 
@@ -241,6 +275,7 @@ subgen/
   config.py          Pydantic models + YAML loader
   models.py          Shared dataclasses (TimedSegment, SubtitleEntry, etc.)
   orchestrator.py    Pipeline class — connects all stages
+  voicenote.py       Voice note transcriber (subgen voicenote)
   cli.py             Typer CLI entry point
 
   audio/

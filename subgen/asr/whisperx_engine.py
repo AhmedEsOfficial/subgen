@@ -68,7 +68,7 @@ class WhisperXASR(BaseASR):
         segments: list[TimedSegment] = []
         for seg in result.get("segments", []):
             words = [
-                TimedWord(start=w["start"], end=w["end"], word=w["word"])
+                TimedWord(start=w["start"], end=w["end"], word=w["word"], probability=w.get("score"))
                 for w in seg.get("words", [])
                 if "start" in w and "end" in w
             ]

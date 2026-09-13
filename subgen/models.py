@@ -12,6 +12,7 @@ class TimedWord:
     start: float  # seconds
     end: float
     word: str
+    probability: float | None = None  # ASR confidence 0-1, when the engine reports it
 
 
 @dataclass
