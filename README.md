@@ -35,8 +35,8 @@ Every stage is swappable via config file or CLI flags. No code changes needed to
 
 ```bash
 # Clone and install
-git clone https://github.com/youruser/subtitles-fall.git
-cd subtitles-fall
+git clone https://github.com/AhmedEsOfficial/subgen.git
+cd subgen
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
 
@@ -365,4 +365,4 @@ Translation time depends heavily on the model. A non-thinking model (e.g. Qwen-2
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).

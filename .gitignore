@@ -218,3 +218,7 @@ __marimo__/
 *.mp4
 *.srt
 voicenotes
+# Local agent / editor notes
+CLAUDE.md
+.claude/
+models/
